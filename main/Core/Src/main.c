@@ -216,6 +216,7 @@ int main(void)
 						  for (clr_id = 0; clr_id < 11; clr_id++){
 							  InputID[clr_id].IDNum = 0;
 						  }
+						  LEDFlag = 0;
 					  }
 				  }
 
