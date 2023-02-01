@@ -42,6 +42,58 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+//button matrix structure
+struct _PortPin{
+	GPIO_TypeDef* PORT;
+	uint16_t PIN;
+};
+struct _GPIOState{
+	GPIO_PinState CurrState;
+	GPIO_PinState LastState;
+};
+struct _PadElement {
+	uint16_t PadValue;
+	uint8_t PadLabel;
+};
+
+// declare variable
+struct _PortPin R[4] = {
+	{GPIOB, GPIO_PIN_13},
+	{GPIOB, GPIO_PIN_14},
+	{GPIOB, GPIO_PIN_15},
+	{GPIOB, GPIO_PIN_1}
+};
+struct _PortPin L[4] = {
+	{GPIOA, GPIO_PIN_9},
+	{GPIOC, GPIO_PIN_7},
+	{GPIOB, GPIO_PIN_6},
+	{GPIOA, GPIO_PIN_7}
+};
+struct _GPIOState Button1;
+
+struct _PadElement Pad1[13] = {
+	// 0-9
+	{8, 0},
+	{4, 1},
+	{64, 2},
+	{1024, 3},
+	{2, 4},
+	{32, 5},
+	{512, 6},
+	{1, 7},
+	{16, 8},
+	{256, 9},
+	// OK (A: 10 or 0xA)
+	{32768, 10},
+	// Backspace (B: 11 or 0xB)
+	{8192, 11},
+	// Clear (C: 12 or 0xC)
+	{4096, 12}
+};
+
+uint16_t ButtonMatrix;
+uint16_t BTNState;
+int Digit;
 
 /* USER CODE END PV */
 
@@ -50,7 +102,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void ReadMatrixButton_SingleRow();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -65,7 +117,6 @@ static void MX_USART2_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -88,7 +139,6 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -98,6 +148,51 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  static uint32_t timestamp=0;
+	  if(HAL_GetTick()>= timestamp){
+		  timestamp =HAL_GetTick() +10;
+		  ReadMatrixButton_SingleRow();
+		  // begin manage push state
+		  if (ButtonMatrix > 0){
+			  Button1.CurrState = 1;
+		  }
+		  else{
+			  Button1.CurrState = 0;
+		  }
+		  // end manage push state
+
+		  // begin manage button input
+		  if (Button1.LastState == 0 && Button1.CurrState == 1){
+			  // loop check match element in struct
+			  register int elem;
+			  for (elem = 0; elem < 14; elem++){
+				  if (ButtonMatrix == Pad1[elem].PadValue){
+					  // Numeric (0-9)
+					  if (elem < 10){
+						  BTNState = elem;
+						  Digit++;
+					  }
+					  // OK (A)
+					  else if (elem == 10){
+						  BTNState = 999;
+						  // check ID
+					  }
+					  // Backspace (B)
+					  else if (elem == 11 && Digit > 0){
+						  Digit--;
+					  }
+					  // Clear (C)
+					  else if (elem == 12){
+						  BTNState = 0;
+						  Digit = 0;
+					  }
+				  }
+
+			  }
+		  }
+		  // end manage button input
+		  Button1.LastState = Button1.CurrState;
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -243,6 +338,22 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void ReadMatrixButton_SingleRow(){
+    static uint8_t X = 0;
+    register int i;
+    for (i = 0; i < 4; i++) {
+        if (HAL_GPIO_ReadPin(L[i].PORT, L[i].PIN)) {
+            ButtonMatrix &= ~(1 << (X * 4 + i));
+        } else {
+            ButtonMatrix |= 1 << (X * 4 + i);
+        }
+    }
+    HAL_GPIO_WritePin(R[X].PORT, R[X].PIN, 1);
+    HAL_GPIO_WritePin(R[(X + 1) % 4].PORT, R[(X + 1) % 4].PIN, 0);
+    X++;
+    X %= 4;
+}
 
 /* USER CODE END 4 */
 
