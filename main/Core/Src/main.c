@@ -51,9 +51,12 @@ struct _GPIOState{
 	GPIO_PinState CurrState;
 	GPIO_PinState LastState;
 };
-struct _PadElement {
+struct _PadElement{
 	uint16_t PadValue;
 	uint8_t PadLabel;
+};
+struct _ID{
+	uint8_t IDNum;
 };
 
 // declare variable
@@ -90,10 +93,25 @@ struct _PadElement Pad1[13] = {
 	// Clear (C: 12 or 0xC)
 	{4096, 12}
 };
+struct _ID InputID[11];
+struct _ID KeyID[11] = {
+		{6},
+		{4},
+		{3},
+		{4},
+		{0},
+		{5},
+		{0},
+		{0},
+		{0},
+		{1},
+		{9}
+};
 
 uint16_t ButtonMatrix;
 uint16_t BTNState;
 int Digit;
+GPIO_PinState LEDFlag;
 
 /* USER CODE END PV */
 
@@ -168,23 +186,36 @@ int main(void)
 			  for (elem = 0; elem < 14; elem++){
 				  if (ButtonMatrix == Pad1[elem].PadValue){
 					  // Numeric (0-9)
-					  if (elem < 10){
+					  if (elem < 10 && Digit < 11){
 						  BTNState = elem;
 						  Digit++;
+						  // Insert number into sequence based by digit
+						  InputID[Digit-1].IDNum = elem;
+
 					  }
 					  // OK (A)
 					  else if (elem == 10){
-						  BTNState = 999;
+						  BTNState = 10;
 						  // check ID
+						  register int id;
+						  for (id = 0; id < 11; id++){
+							  if(InputID[id].IDNum != KeyID[id].IDNum){LEDFlag = 0;}
+							  else{LEDFlag = 1;}
+						  }
 					  }
 					  // Backspace (B)
 					  else if (elem == 11 && Digit > 0){
 						  Digit--;
+						  InputID[Digit].IDNum = 0;
 					  }
 					  // Clear (C)
 					  else if (elem == 12){
 						  BTNState = 0;
 						  Digit = 0;
+						  register int clr_id;
+						  for (clr_id = 0; clr_id < 11; clr_id++){
+							  InputID[clr_id].IDNum = 0;
+						  }
 					  }
 				  }
 
@@ -192,6 +223,8 @@ int main(void)
 		  }
 		  // end manage button input
 		  Button1.LastState = Button1.CurrState;
+
+		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, LEDFlag);
 	  }
   }
   /* USER CODE END 3 */
