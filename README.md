@@ -1,7 +1,7 @@
 # LAB1-KeyPad
 ## Description
 Build system that **get input from HC-35 Matrix Button** to **match with student ID** in system.
-If input ID match with ID in system, LD2 on Nucleo F411RE will turn on.
+If input ID match with ID in system, LD2 on Nucleo F411RE will turn on.    
 ![image](https://user-images.githubusercontent.com/122529018/216011376-a624a931-b4cf-4a7f-abbe-556557c80f82.png)    
 HC-35 Matrix Button - image by [amazon](https://www.amazon.com/Liyafy-Buttons-Keyboard-Marquee-Independent/dp/B07TFFL1JX "HC-35")    
 ## System Requirement
